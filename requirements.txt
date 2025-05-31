@@ -1,0 +1,9 @@
+llama-index
+langchain
+faiss-cpu
+transformers
+accelerate
+fastapi
+uvicorn
+sentence-transformers
+PyMuPDF
