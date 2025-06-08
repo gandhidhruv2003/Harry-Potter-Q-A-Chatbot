@@ -1,27 +1,34 @@
-from llama_index.core import VectorStoreIndex, SimpleDirectoryReader, Settings
+from llama_index.core import VectorStoreIndex, SimpleDirectoryReader, Settings, StorageContext
+from llama_index.core.node_parser import SentenceSplitter
 from llama_index.embeddings.huggingface import HuggingFaceEmbedding
 from llama_index.llms.huggingface import HuggingFaceLLM
 from llama_index.vector_stores.faiss import FaissVectorStore
 
 from model import model, tokenizer
 
-embed_model = HuggingFaceEmbedding(model_name="sentence-transformers/all-MiniLM-L6-v2")
+# Embedding model (unchanged)
+Settings.embed_model = HuggingFaceEmbedding(model_name="sentence-transformers/all-MiniLM-L6-v2")
 
 Settings.llm = HuggingFaceLLM(
     model=model,
     tokenizer=tokenizer,
-    max_new_tokens=256
+    generate_kwargs={
+        "max_new_tokens": 256,
+        "temperature": 0.7
+    },
+    is_chat_model=True
 )
 
-Settings.embed_model = HuggingFaceEmbedding(
-    model_name="sentence-transformers/all-MiniLM-L6-v2"
-)
-
-# Load text chunks
+# Load and split text
 documents = SimpleDirectoryReader("data").load_data()
+splitter = SentenceSplitter(chunk_size=2000, chunk_overlap=200)
+nodes = splitter.get_nodes_from_documents(documents)
 
-# Build vector store index
-index = VectorStoreIndex.from_documents(documents)
+# Build FAISS vector store and index
+faiss_store = FaissVectorStore.from_documents(documents, embed_model=Settings.embed_model)
+storage_context = StorageContext.from_defaults(vector_store=faiss_store)
+
+index = VectorStoreIndex(nodes, storage_context=storage_context)
 query_engine = index.as_query_engine()
 
 def query_llm(question: str) -> str:

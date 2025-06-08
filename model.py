@@ -1,7 +1,12 @@
-from transformers import AutoModelForSeq2SeqLM, AutoTokenizer
+from transformers import AutoTokenizer, AutoModelForCausalLM
 
-model_id = "google/flan-t5-large"
+model_id = "meta-llama/Meta-Llama-3-8B-Instruct"
 
 # Load tokenizer and model
-tokenizer = AutoTokenizer.from_pretrained(model_id, model_max_length=1024, use_fast=True)
-model = AutoModelForSeq2SeqLM.from_pretrained(model_id)
+tokenizer = AutoTokenizer.from_pretrained(model_id, use_fast=True)
+model = AutoModelForCausalLM.from_pretrained(
+    model_id,
+    device_map="auto",
+    torch_dtype="auto",
+    trust_remote_code=True
+)
